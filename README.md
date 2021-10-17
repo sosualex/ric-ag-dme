@@ -33,7 +33,7 @@ local variables:
   - When site Si exits the CS, it sends all the deferred REPLY messages: ∀j if RDi [j] = 1, then Si  sends a REPLY message to Sj and sets RDi [j] = 0
 
 # common functions
-
+    
     executeCS(){ isExec = true; wait(csTime) isExec = false}
 
     request(){
@@ -47,7 +47,7 @@ local variables:
 
     send(receiver, message){
         attach sender id and timestamp
-
+        add message in channel
     }
 
     receive(msg){
@@ -63,6 +63,22 @@ local variables:
     processReply(){
         algo steps
     }
+
+
+# test
+## inputs
+1. number of nodes
+2. exec time for critical section
+3. request sequence array [{delay, nodeID}]
+  - e.g.:- 5, 2000, [100, 3, 5000, 2, 0, 1 ]
+  - system has 5 nodes 
+  - critical section takes 2 sec to execute
+  - once system is running, after 100 ms delay, node 3 request for critical section 
+  - after node 3 request, after delay of 5 sec, node 2 requests
+  - after node 2 requests, immediately node 1 requests
+
+## outputs
+each step is written to logs.
 
 
 
