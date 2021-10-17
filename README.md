@@ -1,2 +1,6 @@
 # ric-ag-dme
-implementation of ricart agarwala distributed mutual exclusion algorithm
+Ricart-Agrawala algorithm for implementing distributed mutual exclusion
+
+
+
+
