@@ -4,15 +4,18 @@ Ricart-Agrawala algorithm for implementing distributed mutual exclusion
 # context
 Channel: assumed FIFO
 
-messages: REQUEST-REPLY
+messages: 
+- REQUEST
+- REPLY
+
+global varaiables:
+- process count
+- execution time for critical section (CS)
 
 local variables: 
 - request deffered array
 - clock
 
-global varaiables:
-- process count
-- execution time
 
 # algorithm steps
 - requesting
