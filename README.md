@@ -5,16 +5,20 @@ Ricart-Agrawala algorithm for implementing distributed mutual exclusion
 Channel: assumed FIFO
 
 messages: 
-- REQUEST
+- REQUEST (broadcast)
+  - processor index
+  - timestamp
 - REPLY
 
 global varaiables:
-- process count
-- execution time for critical section (CS)
+- n - process count
+- csTime - execution time for critical section (CS)
 
 local variables: 
-- request deffered array
-- clock
+- RD[n] - request deffered array
+- ts - clock
+- i - processor index
+- isExec - true if process is executing CS
 
 
 # algorithm steps
@@ -28,7 +32,37 @@ local variables:
 - releasing
   - When site Si exits the CS, it sends all the deferred REPLY messages: ∀j if RDi [j] = 1, then Si  sends a REPLY message to Sj and sets RDi [j] = 0
 
+# common functions
 
+    executeCS(){ isExec = true; wait(csTime) isExec = false}
+
+    request(){
+        for x = 1 to n
+          send(x,"req")
+    }
+
+    reply(x){
+        send(x,"rep")
+    }
+
+    send(receiver, message){
+        attach sender id and timestamp
+
+    }
+
+    receive(msg){
+        check msg type
+        processRequest()
+        processReply()
+    }
+
+    processRequest(){
+        algo steps
+    }
+    
+    processReply(){
+        algo steps
+    }
 
 
 
