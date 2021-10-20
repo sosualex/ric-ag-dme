@@ -1,0 +1,26 @@
+{
+  "dependencies": {
+    "mocha": "^9.1.3"
+  },
+  "name": "ric-ag-dme",
+  "description": "Ricart-Agrawala algorithm for implementing distributed mutual exclusion",
+  "version": "1.0.0",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sosualex/ric-ag-dme.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sosualex/ric-ag-dme/issues"
+  },
+  "homepage": "https://github.com/sosualex/ric-ag-dme#readme"
+}
