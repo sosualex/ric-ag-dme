@@ -14,15 +14,18 @@ node1.advanceClock(5)
 node1.advanceClock(3)
 //node3.handleRequest(1, 2)
 nodes = [node1, node2, node3]
+node1.sendRequest()
 
-request(1,1)
+// request(1,1)
 
-function request(senderId, senderTs) {
-    nodes.forEach((n) => {
-        if (n.id != senderId) {
-            n.handleRequest(senderId, senderTs)
-        }
-    })
-}
+// function request(senderId, senderTs) {
+//     nodes.forEach((n) => {
+//         if (n.id != senderId) {
+//             n.handleRequest(senderId, senderTs)
+//         }
+//     })
+// }
+
+module.exports={nodes}
 
 //

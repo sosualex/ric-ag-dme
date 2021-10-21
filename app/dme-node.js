@@ -1,36 +1,99 @@
 const log = require('../log');
+const express = require('express')
+const basePort = 3000
+const got = require('got');
+
 class Dnode {
     constructor(nodeId, totalCount) {
+        log(nodeId)
         this.id = nodeId;
         this.nodeCount = totalCount;
-//        this.listeners=listeners;
         this.ts = 0;
         this.rd_array = []
         while (totalCount > 0) {
             this.rd_array.push(0)
-            // this.received.push([])
-            // this.sent.push([])
             totalCount--;
         }
+
+        this.app = express();
         log(`node ${this.id} created`)
+
     }
-    advanceClock(refTs) {
+    advanceClock(refTs) {        
+        log(`C${this.id}: ${this.ts}, Cmsg: ${refTs}`)
+        refTs=Number(refTs);
         this.ts = refTs > this.ts ? refTs + 1 : this.ts + 1
-        log(this.ts)
+        log(`C${this.id}: ${this.ts}`)
+    }
+
+    startNode() {
+        let port = basePort + this.id
+        this.app.get('/:msg/:senderId/:senderTs', (req, res) => {
+            let thisNode = this;
+            log(req.params)
+            if (req.params.msg == 'req') {
+                thisNode.handleRequest(req.params.senderId, req.params.senderTs)
+            } else {
+                log('in reply')
+                thisNode.handleReply(req.params.senderId, req.params.senderTs)
+            }
+            res.send('Hello World!')
+        })
+        this.app.listen(port, () => {
+            log(`Node ${this.id} listening at http://localhost:${port}`)
+        })
+    }
+    listener(req, res) {
+        let thisNode = this;
+        log(req.params)
+        if (req.params.msg == 'req') {
+            thisNode.handleRequest(req.params.senderId, req.params.senderTs)
+        } else {
+            log('in reply')
+            thisNode.handleReply(req.params.senderId, req.params.senderTs)
+        }
+        res.send('Hello World!')
+    }
+
+    sender = async function (msg, toNodeId) {
+        try {
+            let port = basePort + Number(toNodeId);
+            let params = `${msg}/${this.id}/${this.ts}`
+            const response = await got(`http://localhost:${port}/${params}`);
+            console.log("hello");
+            console.log(response.body)
+        } catch (error) {
+            console.log(error);
+        }
+    }
+    sendRequest() {
+        /*
+        - requesting
+        - When a site Si wants to enter the CS, 
+        it broadcasts a timestamped REQUEST message to all other sites
+        */
+        log(`in node ${this.id} sendRequest ${this.id} to broadcast`)
+        this.advanceClock(0)
     }
 
     handleRequest(senderId, senderTs) {
-        
-        log(`in node ${this.id}`)
-        log(`handleRequest ${senderId} to ${this.id}`)
+        log(`in node ${this.id} handleRequest ${senderId} to ${this.id}`)
+        this.advanceClock(senderTs)
+        this.sender('rep', senderId)
+
+    }
+
+    sendReply(sendTo) {
+        log(`in node ${this.id} sendReply to ${senderId} to ${this.id}`)
+        this.advanceClock(0)
     }
 
     handleReply(senderId, senderTs) {
-        log('handleReply')
-
-        log(senderId)
-        log(senderTs)
-
+        log(`in node ${this.id} handleReply ${senderId} to ${this.id}`)
+        this.advanceClock(senderTs)
+    }
+    executeCs() {
+        this.advanceClock(this.ts + 5)
     }
 }
 module.exports = Dnode
