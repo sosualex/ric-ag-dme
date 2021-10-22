@@ -5,23 +5,24 @@ const got = require('got');
 
 class Dnode {
     constructor(nodeId, totalCount) {
-        log(nodeId)
-        this.id = nodeId;
-        this.nodeCount = totalCount;
+        //log(nodeId)
+        this.state = 0 //not requesting, not executing
+        // todo: add enum for states
+        this.id = Number(nodeId);
+        this.nodeCount = Number(totalCount);
         this.ts = 0;
         this.rd_array = []
         while (totalCount > 0) {
             this.rd_array.push(0)
             totalCount--;
         }
-
-        this.app = express();
+        this.app = new express();
         log(`node ${this.id} created`)
-
     }
-    advanceClock(refTs) {        
+    advanceClock(refTs) {
+        if (!refTs) refTs = 0;
         log(`C${this.id}: ${this.ts}, Cmsg: ${refTs}`)
-        refTs=Number(refTs);
+        refTs = Number(refTs);
         this.ts = refTs > this.ts ? refTs + 1 : this.ts + 1
         log(`C${this.id}: ${this.ts}`)
     }
@@ -30,32 +31,26 @@ class Dnode {
         let port = basePort + this.id
         this.app.get('/:msg/:senderId/:senderTs', (req, res) => {
             let thisNode = this;
-            log(req.params)
-            if (req.params.msg == 'req') {
-                thisNode.handleRequest(req.params.senderId, req.params.senderTs)
+            let { msg, senderId, senderTs } = req.params
+            if (msg == 'req') {
+                thisNode.handleRequest(senderId, senderTs)
             } else {
-                log('in reply')
-                thisNode.handleReply(req.params.senderId, req.params.senderTs)
+                thisNode.handleReply(senderId, senderTs)
             }
-            res.send('Hello World!')
+            res.send(`Node ${this.id} received ${msg} with ts ${senderTs} from ${senderId}`)
         })
-        this.app.listen(port, () => {
+        this.server = this.app.listen(port, () => {
             log(`Node ${this.id} listening at http://localhost:${port}`)
         })
     }
-    listener(req, res) {
-        let thisNode = this;
-        log(req.params)
-        if (req.params.msg == 'req') {
-            thisNode.handleRequest(req.params.senderId, req.params.senderTs)
-        } else {
-            log('in reply')
-            thisNode.handleReply(req.params.senderId, req.params.senderTs)
-        }
-        res.send('Hello World!')
+
+    stopNode() {
+        this.server.close(() => {
+            log(`Node ${this.id} stopping.`)
+        })
     }
 
-    sender = async function (msg, toNodeId) {
+    sender1 = async function (msg, toNodeId) {
         try {
             let port = basePort + Number(toNodeId);
             let params = `${msg}/${this.id}/${this.ts}`
@@ -66,18 +61,46 @@ class Dnode {
             console.log(error);
         }
     }
+    sender(msg, toNodeId) {
+        let port = basePort + Number(toNodeId);
+        log(`Node ${this.id} sending ${msg} with ts ${this.ts} to ${toNodeId} at ${port}`)
+        let params = `${msg}/${this.id}/${this.ts}`
+        got(`http://localhost:${port}/${params}`)
+            .then((data, err) => {
+                log(`response for ${params} from ${port}`)
+                if (!err) {
+                    log(data.body)
+                } else {
+                    log(err)
+                }
+            })
+    }
     sendRequest() {
         /*
         - requesting
         - When a site Si wants to enter the CS, 
         it broadcasts a timestamped REQUEST message to all other sites
         */
-        log(`in node ${this.id} sendRequest ${this.id} to broadcast`)
-        this.advanceClock(0)
+        log(`in node ${this.id} sendRequest to broadcast`)
+        if (this.state == 0) {
+            this.state = 1
+        } //requesting state
+        else {
+            log('alreadyRequesting');
+            return;
+        }
+        for (let index = 1; index <= this.nodeCount; index++) {
+            if (index == this.id) continue
+            this.sender('req', index)
+            //todo: add enum for msg types
+        }
+
+        this.advanceClock()
     }
 
     handleRequest(senderId, senderTs) {
         log(`in node ${this.id} handleRequest ${senderId} to ${this.id}`)
+
         this.advanceClock(senderTs)
         this.sender('rep', senderId)
 
