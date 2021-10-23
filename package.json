@@ -1,7 +1,5 @@
 {
   "dependencies": {
-    "express": "^4.17.1",
-    "got": "^11.8.2",
     "mocha": "^9.1.3"
   },
   "name": "ric-ag-dme",
@@ -11,6 +9,7 @@
   "directories": {
     "test": "test"
   },
+  "devDependencies": {},
   "scripts": {
     "test": "mocha"
   },
