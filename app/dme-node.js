@@ -2,10 +2,11 @@ const log = require('../log');
 const express = require('express')
 const basePort = 3000
 const got = require('got');
+const {nodeState,messageType}=require('./constants')
 
 class Dnode {
     constructor(nodeId, totalCount) {
-        this.state = 0 //not requesting, not executing
+        this.state = nodeState.none //not requesting, not executing
         // todo: add enum for states
         this.id = Number(nodeId);
         this.nodeCount = Number(totalCount);
@@ -35,7 +36,7 @@ class Dnode {
             let { msg, senderId, senderTs } = req.params
 
             log(`Node ${this.id} received ${msg} with ts ${senderTs} from ${senderId}`)
-            if (msg == 'req') {
+            if (msg == messageType.request) {
                 thisNode.handleRequest(senderId, senderTs)
             } else {
                 thisNode.handleReply(senderId, senderTs)
@@ -81,11 +82,11 @@ class Dnode {
         }
 
         this.advanceClock()
-        this.state = 1 //requesting state
+        this.state = nodeState.requesting //requesting state
         this.request = { ts: this.ts, count: 0 }
         for (let index = 1; index <= this.nodeCount; index++) {
             if (index == this.id) continue
-            this.sender('req', index)
+            this.sender(messageType.request, index)
             this.request.count++;
             //todo: add enum for msg types
         }
@@ -125,7 +126,7 @@ class Dnode {
         log(`in node ${this.id} sendReply from ${this.id} to ${sendTo}`)
 
         this.advanceClock()
-        this.sender('rep', sendTo)
+        this.sender(messageType.reply, sendTo)
     }
 
     handleReply(senderId, senderTs) {

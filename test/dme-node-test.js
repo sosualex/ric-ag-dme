@@ -2,6 +2,7 @@
 const assert = require('assert');
 const Dnode = require('../app/dme-node');
 const log = require('../log');
+const { nodeState, messageType } = require('../app/constants')
 
 describe('>>>Node initialization', () => {
     it('intializes the node', () => {
@@ -44,7 +45,7 @@ describe('>>>Request', () => {
         let tracker = new assert.CallTracker();
         dnode.sender = tracker.calls((msg, toId) => {
             log('calling sender')
-            assert.equal(msg, 'req', 'message should be request')
+            assert.equal(msg, messageType.request, 'message should be request')
             assert.notEqual(toId, dnode.id, 'should not send to self')
             assert(toId <= 5, 'should send only to nodes in system')
         }, 4)
@@ -59,7 +60,7 @@ describe('>>>Request', () => {
     it('does nothing if already in requesting state', () => {
         let dnode = new Dnode(1, 5);
         let tracker = new assert.CallTracker();
-        dnode.state = 1; // already requesting
+        dnode.state = nodeState.requesting; // already requesting
         dnode.sender = tracker.calls(() => { log('calling sender') })
         dnode.advanceClock = tracker.calls(() => { log(`clock++ ${dnode.ts}`) })
 
@@ -73,7 +74,7 @@ describe('>>>Request', () => {
     it('does nothing if already in executing state', () => {
         let dnode = new Dnode(1, 5);
         let tracker = new assert.CallTracker();
-        dnode.state = 2; // already executing
+        dnode.state = nodeState.executing; // already executing
         dnode.sender = tracker.calls(() => { log('calling sender') })
         dnode.advanceClock = tracker.calls(() => { log(`clock++ ${dnode.ts}`) })
 
@@ -90,7 +91,7 @@ describe('>>>Request', () => {
 describe('>>>Handle request', () => {
     it('reply if not requesting or executing', () => {
         let dnode = new Dnode(1, 2);
-        dnode.state = 0 //not requesting or executing
+        dnode.state = nodeState.none //not requesting or executing
         let reqFromId = 2
         let tracker = new assert.CallTracker()
         dnode.sendReply = tracker.calls((toId) => {
@@ -109,7 +110,7 @@ describe('>>>Handle request', () => {
 
     it('reply if requesting and incoming ts < own request ts = current ts', () => {
         let dnode = new Dnode(1, 2);
-        dnode.state = 1 // requesting state        
+        dnode.state = nodeState.requesting // requesting state        
         dnode.request = { ts: 2, count: 1 } //own request ts = 2
         dnode.ts = dnode.request.ts // current ts = own request ts
         let reqFromId = dnode.id + 1
@@ -129,7 +130,7 @@ describe('>>>Handle request', () => {
     })
     it('reply if requesting and incoming ts < own request ts < current ts', () => {
         let dnode = new Dnode(1, 2);
-        dnode.state = 1 // requesting state        
+        dnode.state = nodeState.requesting // requesting state        
         dnode.request = { ts: 2, count: 1 } //own request ts = 2
         dnode.ts = dnode.request.ts + 2 // current ts=4
         let reqFromId = dnode.id + 1
@@ -151,7 +152,7 @@ describe('>>>Handle request', () => {
 
     it('reply if requesting and own request ts = incoming ts and sender index < own index', () => {
         let dnode = new Dnode(2, 2);
-        dnode.state = 1 // requesting state        
+        dnode.state = nodeState.requesting // requesting state        
         dnode.request = { ts: 2, count: 1 } //own request ts = 2
         dnode.ts = dnode.request.ts // current ts = own request ts
         let reqFromId = dnode.id - 1
@@ -171,7 +172,7 @@ describe('>>>Handle request', () => {
     })
     it('defer if requesting and own request ts = incoming ts and sender index > own index', () => {
         let dnode = new Dnode(2, 2);
-        dnode.state = 1 // requesting state        
+        dnode.state = nodeState.requesting // requesting state        
         dnode.request = { ts: 2, count: 1 } //own request ts = 2
         dnode.ts = dnode.request.ts // current ts = own request ts
         let reqFromId = dnode.id + 1
@@ -194,7 +195,7 @@ describe('>>>Handle request', () => {
 
     it('defers if requesting and own request ts < incoming ts < current ts', () => {
         let dnode = new Dnode(1, 2);
-        dnode.state = 1 // requesting state        
+        dnode.state = nodeState.requesting // requesting state        
         dnode.request = { ts: 2, count: 1 } //request ts = 2
         dnode.ts = dnode.request.ts + 2 // current ts=4
         let reqFromId = dnode.id + 1
@@ -216,7 +217,7 @@ describe('>>>Handle request', () => {
     })
     it('defers if requesting and current ts = own request ts < incoming ts', () => {
         let dnode = new Dnode(1, 2);
-        dnode.state = 1 // requesting state        
+        dnode.state = nodeState.requesting // requesting state        
         dnode.request = { ts: 2, count: 1 } //own request ts = 2
         dnode.ts = dnode.request.ts // current ts = own request ts
         let reqFromId = dnode.id + 1
@@ -239,7 +240,7 @@ describe('>>>Handle request', () => {
 
     it('defers if executing state', () => {
         let dnode = new Dnode(1, 2);
-        dnode.state = 2 //executing
+        dnode.state = nodeState.executing //executing
         let reqFromId = 2
         let clock_tracker = new assert.CallTracker()
         dnode.advanceClock = clock_tracker.calls((ts) => {
@@ -261,11 +262,11 @@ describe('>>>Reply', () => {
     it('sends reply message', () => {
         let dnode = new Dnode(1, 5);
         let tracker = new assert.CallTracker();
-        let sendToId = dnode.id+1
+        let sendToId = dnode.id + 1
 
         dnode.sender = tracker.calls((msg, toId) => {
             log('calling sender')
-            assert.equal(msg, 'rep', 'message should be reply')
+            assert.equal(msg, messageType.reply, 'message should be reply')
             assert.equal(toId, sendToId, 'should send to correct node')
         })
         dnode.advanceClock = tracker.calls(() => { log(`clock ${dnode.ts} ++`) })
