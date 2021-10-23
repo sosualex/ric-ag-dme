@@ -2,14 +2,6 @@
 const assert = require('assert');
 const Dnode = require('../app/dme-node');
 const log = require('../log');
-const got = require('got')
-const express = require('express');
-const { CallTracker } = require('assert/strict');
-const { loadavg } = require('os');
-//const tracker = new assert.CallTracker()
-// verifyTracker(){
-//     assert.doesNotThrow(() => { tracker.verify() }, JSON.stringify(tracker.report()))
-// }
 
 describe('>>>Node initialization', () => {
     it('intializes the node', () => {

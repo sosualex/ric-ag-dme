@@ -7,6 +7,8 @@ const express = require('express');
 const { CallTracker } = require('assert/strict');
 
 describe('>>>Node sender channels', () => {
+    //todo: shift setting up server to before all hook
+    //todo: shift closing server to after all hook
     it('send test message to dummy server', () => {
         let senderNode = new Dnode(1, 1);
         let ts = 2;
