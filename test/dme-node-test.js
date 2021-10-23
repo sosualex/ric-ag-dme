@@ -42,7 +42,12 @@ describe('>>>Request', () => {
     it('send request to all other nodes', () => {
         let dnode = new Dnode(1, 5);
         let tracker = new assert.CallTracker();
-        dnode.sender = tracker.calls(() => { log('calling sender') }, 4)
+        dnode.sender = tracker.calls((msg, toId) => {
+            log('calling sender')
+            assert.equal(msg, 'req', 'message should be request')
+            assert.notEqual(toId, dnode.id, 'should not send to self')
+            assert(toId <= 5, 'should send only to nodes in system')
+        }, 4)
         dnode.advanceClock = tracker.calls(() => { log(`clock ${dnode.ts} ++`) })
 
         dnode.sendRequest()
@@ -101,7 +106,7 @@ describe('>>>Handle request', () => {
         assert.deepStrictEqual(dnode.rd_array[reqFromId - 1], 0, 'rd_array should be 0')
 
     })
-    
+
     it('reply if requesting and incoming ts < own request ts = current ts', () => {
         let dnode = new Dnode(1, 2);
         dnode.state = 1 // requesting state        
@@ -252,26 +257,23 @@ describe('>>>Handle request', () => {
         assert.equal(dnode.rd_array[reqFromId - 1], 1, 'rd_array should be 1')
     })
 })
+describe('>>>Reply', () => {
+    it('sends reply message', () => {
+        let dnode = new Dnode(1, 5);
+        let tracker = new assert.CallTracker();
+        let sendToId = dnode.id+1
 
-// describe('>>>Request-reply actions',()=>{
+        dnode.sender = tracker.calls((msg, toId) => {
+            log('calling sender')
+            assert.equal(msg, 'rep', 'message should be reply')
+            assert.equal(toId, sendToId, 'should send to correct node')
+        })
+        dnode.advanceClock = tracker.calls(() => { log(`clock ${dnode.ts} ++`) })
 
-//     // it('sends a reply',()=>{
-//     //     let start_ts = dnode.ts
-//     //     dnode.send_reply();
-//     //     assert.equal(dnode.ts, start_ts+1)
+        dnode.sendReply(sendToId)
 
-//     // })
+        assert.doesNotThrow(() => { tracker.verify() }, JSON.stringify(tracker.report()))
+    })
+})
 
-//     it('processes a request message', () => {
-//         let sender_id = 3, sender_ts = 1, start_ts = dnode.ts
-//         advClock = dnode.advanceClock
-//         dnode.advanceClock = tracker.calls(advClock, 1)
-//         //dnode.send_reply = tracker.calls(dnode.send_reply, 1);
-//         dnode.handleRequest(sender_id, sender_ts);
-//         assert.doesNotThrow(() => { tracker.verify() }, JSON.stringify(tracker.report()))
-//         assert.equal(dnode.rd_array[sender_id - 1], 0, 'rd_array wrong')
-//         assert.equal(dnode.ts, start_ts + 1)
-//         dnode.advanceClock=advClock
-//         //log(dnode)
-//     })
-// })
+
