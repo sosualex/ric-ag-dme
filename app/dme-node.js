@@ -2,7 +2,7 @@ const log = require('../log');
 const express = require('express')
 const basePort = 3000
 const got = require('got');
-const {nodeState,messageType}=require('./constants')
+const { nodeState, messageType } = require('./constants')
 
 class Dnode {
     constructor(nodeId, totalCount) {
@@ -12,7 +12,7 @@ class Dnode {
         this.nodeCount = Number(totalCount);
         this.ts = 0;
         this.rd_array = []
-        this.request = {ts:0, count:0}
+        this.request = { ts: 0, count: 0 }
         while (totalCount > 0) {
             this.rd_array.push(0)
             totalCount--;
@@ -131,10 +131,25 @@ class Dnode {
 
     handleReply(senderId, senderTs) {
         log(`in node ${this.id} handleReply ${senderId} to ${this.id}`)
+        //   - Site Si enters the CS after it has received a REPLY message from every site it sent a REQUEST message to
         this.advanceClock(senderTs)
+        this.request.count--
+        if (this.request.count == 0) { this.executeCs() }
     }
     executeCs() {
+        this.state = nodeState.executing;
         this.advanceClock(this.ts + 5)
+        this.releaseCs()
+    }
+    releaseCs() {
+        /**
+         * 
+            - releasing
+            - When site Si exits the CS, it sends all the deferred REPLY messages: 
+            ∀j if RDi [j] = 1, then Si  sends a REPLY message to Sj and sets RDi [j] = 0
+         */
+        //send all replies
+        this.state=nodeState.none
     }
 }
 

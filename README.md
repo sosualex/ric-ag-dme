@@ -32,6 +32,9 @@ local variables:
 - releasing
   - When site Si exits the CS, it sends all the deferred REPLY messages: ∀j if RDi [j] = 1, then Si  sends a REPLY message to Sj and sets RDi [j] = 0
 
+# assumption
+- all sites are connected to each other through messaging channels
+
 # common functions
     
     executeCS(){ isExec = true; wait(csTime) isExec = false}

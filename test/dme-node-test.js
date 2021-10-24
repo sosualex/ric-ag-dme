@@ -87,7 +87,6 @@ describe('>>>Request', () => {
     })
 
 });
-
 describe('>>>Handle request', () => {
     it('reply if not requesting or executing', () => {
         let dnode = new Dnode(1, 2);
@@ -276,5 +275,40 @@ describe('>>>Reply', () => {
         assert.doesNotThrow(() => { tracker.verify() }, JSON.stringify(tracker.report()))
     })
 })
+describe('>>>Handle reply', () => {
+    it('updates the reply counter on the request', () => {
+        let dnode = new Dnode(1, 3)
+        dnode.request = { ts: 0, count:2 }
+        let clock_tracker = new assert.CallTracker()
+        dnode.advanceClock=clock_tracker.calls((ts) => {
+            log(`clock ${ts} ++`)
+            assert.equal(ts, dnode.ts)
+        })
+        let exec_Tracker = new assert.CallTracker()
+        dnode.executeCs = exec_Tracker.calls(()=>{log('!!!! execute should not be called !!!!')})
 
+        dnode.handleReply(2, 0)
+
+        assert.equal(dnode.request.count,1, 'count should be 1')
+        assert.doesNotThrow(() => { clock_tracker.verify() }, JSON.stringify(clock_tracker.report()))
+        assert.throws(()=>{exec_Tracker.verify()}, 'execute should not be called.')
+    })
+    it('executes cs if last reply is received',()=>{
+        let dnode = new Dnode(1, 3)
+        dnode.request = { ts: 0, count:1 }
+        let clock_tracker = new assert.CallTracker()
+        dnode.advanceClock=clock_tracker.calls((ts) => {
+            log(`clock ${ts} ++`)
+            assert.equal(ts, dnode.ts)
+        })
+        let exec_Tracker = new assert.CallTracker()
+        dnode.executeCs = exec_Tracker.calls(()=>{log('executing critical section....')})
+
+        dnode.handleReply(2, 0)
+
+        assert.equal(dnode.request.count,0, 'count should be 0')
+        assert.doesNotThrow(() => { clock_tracker.verify() }, JSON.stringify(clock_tracker.report()))
+        assert.doesNotThrow(() => { exec_Tracker.verify() }, JSON.stringify(exec_Tracker.report()))
+    })
+})
 
