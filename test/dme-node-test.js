@@ -2,7 +2,8 @@
 const assert = require('assert');
 const Dnode = require('../app/dme-node');
 const log = require('../log');
-const { nodeState, messageType } = require('../app/constants')
+const { nodeState, messageType } = require('../app/constants');
+const { setUncaughtExceptionCaptureCallback } = require('process');
 
 describe('>>>Node initialization', () => {
     it('intializes the node', () => {
@@ -49,7 +50,9 @@ describe('>>>Request', () => {
             assert.notEqual(toId, dnode.id, 'should not send to self')
             assert(toId <= 5, 'should send only to nodes in system')
         }, 4)
-        dnode.advanceClock = tracker.calls(() => { log(`clock ${dnode.ts} ++`) })
+        dnode.advanceClock = tracker.calls((ts) => {
+            assert.equal(ts, undefined, 'timestamp should be picked from node')
+        })
 
         dnode.sendRequest()
 
@@ -61,8 +64,8 @@ describe('>>>Request', () => {
         let dnode = new Dnode(1, 5);
         let tracker = new assert.CallTracker();
         dnode.state = nodeState.requesting; // already requesting
-        dnode.sender = tracker.calls(() => { log('calling sender') })
-        dnode.advanceClock = tracker.calls(() => { log(`clock++ ${dnode.ts}`) })
+        dnode.sender = tracker.calls(() => { assert.fail('sender should not be called') })
+        dnode.advanceClock = tracker.calls(() => { assert.fail('clock should not advance') })
 
         dnode.sendRequest()
 
@@ -75,9 +78,8 @@ describe('>>>Request', () => {
         let dnode = new Dnode(1, 5);
         let tracker = new assert.CallTracker();
         dnode.state = nodeState.executing; // already executing
-        dnode.sender = tracker.calls(() => { log('calling sender') })
-        dnode.advanceClock = tracker.calls(() => { log(`clock++ ${dnode.ts}`) })
-
+        dnode.sender = tracker.calls(() => { assert.fail('should not call sender') })
+        dnode.advanceClock = tracker.calls(() => { assert.fail('should not advance clock') })
         dnode.sendRequest()
 
         assert.equal(dnode.ts, 0, 'time stamp should be 0')
@@ -182,7 +184,7 @@ describe('>>>Handle request', () => {
         })
         let reply_tracker = new assert.CallTracker()
         dnode.sendReply = reply_tracker.calls(() => {
-            log('!!!! reply should not be called !!!!')
+            assert.fail('reply should not be called')
         })
 
         dnode.handleRequest(reqFromId, reqTs)
@@ -205,7 +207,7 @@ describe('>>>Handle request', () => {
         })
         let reply_tracker = new assert.CallTracker()
         dnode.sendReply = reply_tracker.calls(() => {
-            log('!!!! reply should not be called !!!!')
+            assert.fail('reply should not be called')
         })
 
         dnode.handleRequest(reqFromId, dnode.request.ts + 1)// incoming ts = 3
@@ -227,7 +229,7 @@ describe('>>>Handle request', () => {
         })
         let reply_tracker = new assert.CallTracker()
         dnode.sendReply = reply_tracker.calls(() => {
-            log('!!!! reply should not be called !!!!')
+            assert.fail('reply should not be called')
         })
 
         dnode.handleRequest(reqFromId, reqTs)// incoming ts = 3
@@ -247,7 +249,7 @@ describe('>>>Handle request', () => {
         })
         let reply_tracker = new assert.CallTracker()
         dnode.sendReply = reply_tracker.calls(() => {
-            log('!!!! reply should not be called !!!!')
+            assert.fail('reply should not be called')
         })
 
         dnode.handleRequest(reqFromId, 10)
@@ -268,7 +270,9 @@ describe('>>>Reply', () => {
             assert.equal(msg, messageType.reply, 'message should be reply')
             assert.equal(toId, sendToId, 'should send to correct node')
         })
-        dnode.advanceClock = tracker.calls(() => { log(`clock ${dnode.ts} ++`) })
+        dnode.advanceClock = tracker.calls((ts) => {
+            assert.equal(ts, undefined, 'timestamp should be picked from node')
+        })
 
         dnode.sendReply(sendToId)
 
@@ -278,37 +282,98 @@ describe('>>>Reply', () => {
 describe('>>>Handle reply', () => {
     it('updates the reply counter on the request', () => {
         let dnode = new Dnode(1, 3)
-        dnode.request = { ts: 0, count:2 }
+        dnode.request = { ts: 0, count: 2 }
+        let senderId = dnode.id + 1
+        let senderTs = dnode.ts + 3
         let clock_tracker = new assert.CallTracker()
-        dnode.advanceClock=clock_tracker.calls((ts) => {
-            log(`clock ${ts} ++`)
-            assert.equal(ts, dnode.ts)
+        dnode.advanceClock = clock_tracker.calls((ts) => {
+            assert.equal(ts, senderTs, 'timestamp should be passed properly')
         })
         let exec_Tracker = new assert.CallTracker()
-        dnode.executeCs = exec_Tracker.calls(()=>{log('!!!! execute should not be called !!!!')})
+        dnode.executeCs = exec_Tracker.calls(() => { assert.fail('should not execute') })
 
-        dnode.handleReply(2, 0)
+        dnode.handleReply(senderId, senderTs)
 
-        assert.equal(dnode.request.count,1, 'count should be 1')
+        assert.equal(dnode.request.count, 1, 'count should be 1')
         assert.doesNotThrow(() => { clock_tracker.verify() }, JSON.stringify(clock_tracker.report()))
-        assert.throws(()=>{exec_Tracker.verify()}, 'execute should not be called.')
+        assert.throws(() => { exec_Tracker.verify() }, 'execute should not be called.')
     })
-    it('executes cs if last reply is received',()=>{
+    it('executes cs if last reply is received', () => {
         let dnode = new Dnode(1, 3)
-        dnode.request = { ts: 0, count:1 }
+        dnode.request = { ts: 0, count: 1 }
+        let senderId = dnode.id + 1
+        let senderTs = dnode.ts + 3
         let clock_tracker = new assert.CallTracker()
-        dnode.advanceClock=clock_tracker.calls((ts) => {
-            log(`clock ${ts} ++`)
-            assert.equal(ts, dnode.ts)
+        dnode.advanceClock = clock_tracker.calls((ts) => {
+            assert.equal(ts, senderTs, 'timestamp should be passed properly')
         })
         let exec_Tracker = new assert.CallTracker()
-        dnode.executeCs = exec_Tracker.calls(()=>{log('executing critical section....')})
+        dnode.executeCs = exec_Tracker.calls(() => { log('executing critical section....') })
 
-        dnode.handleReply(2, 0)
+        dnode.handleReply(senderId, senderTs)
 
-        assert.equal(dnode.request.count,0, 'count should be 0')
+        assert.equal(dnode.request.count, 0, 'count should be 0')
         assert.doesNotThrow(() => { clock_tracker.verify() }, JSON.stringify(clock_tracker.report()))
         assert.doesNotThrow(() => { exec_Tracker.verify() }, JSON.stringify(exec_Tracker.report()))
     })
 })
+describe('>>>Execute', () => {
+    it('executes and initiates release of CS', () => {
+        let dnode = new Dnode(1, 2)
+        let release_tracker = new assert.CallTracker()
+        dnode.releaseCs = release_tracker.calls(() => { log('releasing cs') })
+        let clock_tracker = new assert.CallTracker()
+        dnode.advanceClock = clock_tracker.calls((ts) => {
+            assert.equal(ts, undefined, 'timestamp should be picked from node')
+        }, 5)
 
+        dnode.executeCs()
+
+        assert.equal(dnode.state, nodeState.executing, 'should be in executing state')
+        assert.doesNotThrow(() => { clock_tracker.verify() }, JSON.stringify(clock_tracker.report()))
+        assert.doesNotThrow(() => { release_tracker.verify() }, JSON.stringify(release_tracker.report()))
+    })
+})
+describe('>>>Release', ()=>{
+    it('changes to initial state', ()=>{
+        let dnode = new Dnode(1,2)
+        dnode.state = nodeState.executing;
+        let clock_tracker = new assert.CallTracker()
+        dnode.advanceClock = clock_tracker.calls((ts) => {
+            assert.equal(ts, undefined, 'timestamp should be picked from node')
+        })
+        let reply_tracker = new assert.CallTracker()
+        dnode.sendReply = reply_tracker.calls(() => {
+            assert.fail('reply should not be called since rd_array is empty')
+        })
+
+        dnode.releaseCs()
+
+        assert.equal(dnode.state, nodeState.none, 'should come back to initial state')        
+        
+        assert.doesNotThrow(() => { clock_tracker.verify() }, JSON.stringify(clock_tracker.report()))
+        assert.throws(()=>{reply_tracker.verify()}, 'should not call reply')          
+    })
+    it('sends replies to all in rd_array', ()=>{
+        let dnode = new Dnode(1,4)
+        dnode.state = nodeState.executing;
+        dnode.rd_array=[0,1,0,1]
+        let clock_tracker = new assert.CallTracker()
+        dnode.advanceClock = clock_tracker.calls((ts) => {
+            assert.equal(ts, undefined, 'timestamp should be picked from node')
+        })
+        let reply_tracker = new assert.CallTracker()
+        dnode.sendReply = reply_tracker.calls((toId) => {
+            assert.notEqual(toId, dnode.id, 'should not reply to self')
+            assert.equal(dnode.rd_array[toId-1],1,'should not send to node ${toId} since rd_array is ${rd_array[toId-1]}')
+        },2)
+
+        dnode.releaseCs()
+
+        assert.equal(dnode.state, nodeState.none, 'should come back to initial state')        
+        assert.doesNotThrow(() => { clock_tracker.verify() }, JSON.stringify(clock_tracker.report()))
+        assert.doesNotThrow(() => { reply_tracker.verify() }, JSON.stringify(reply_tracker.report()))
+    })
+})
+
+    

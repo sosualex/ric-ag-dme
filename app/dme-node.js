@@ -138,7 +138,13 @@ class Dnode {
     }
     executeCs() {
         this.state = nodeState.executing;
-        this.advanceClock(this.ts + 5)
+        
+        this.advanceClock()
+        this.advanceClock()
+        this.advanceClock()
+        this.advanceClock()
+        this.advanceClock()
+
         this.releaseCs()
     }
     releaseCs() {
@@ -150,6 +156,12 @@ class Dnode {
          */
         //send all replies
         this.state=nodeState.none
+        this.advanceClock()
+        this.rd_array.forEach((v,i)=>{
+            if(v==1){
+                this.sendReply(i+1)
+            }
+        })
     }
 }
 
