@@ -76,17 +76,18 @@ local variables:
 # test
 ## inputs
 1. number of nodes
-2. exec time for critical section
-3. request sequence array [{delay, nodeID}]
-  - e.g.:- 5, 2000, [100, 3, 5000, 2, 0, 1 ]
+3. request sequence array [nodeID1, delay1, nodeID2, delay2]
+  - e.g.:- 5, [1,0,2,5,3,5,5,7,4,10 ]
   - system has 5 nodes 
-  - critical section takes 2 sec to execute
-  - once system is running, after 100 ms delay, node 3 request for critical section 
-  - after node 3 request, after delay of 5 sec, node 2 requests
-  - after node 2 requests, immediately node 1 requests
+  - once system is running, 
+      - node 1 requests with ts 0
+      - node 2 requests with ts 5
+      - node 3 requests with ts 5, so 2 & 3 requests concurrently
+      - node 4 requests with ts 7
+      - node 5 requests with ts 10
 
 ## outputs
-each step is written to logs.
+each step is written to console.
 
 
 
