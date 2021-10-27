@@ -1,13 +1,13 @@
 const express = require('express')
 const basePort = 3000
 const got = require('got');
-const { nodeState, messageType } = require('./constants')
+const { siteState, messageType } = require('./constants')
 
-class Dnode {
-    constructor(nodeId, totalCount) {
-        this.state = nodeState.none //not requesting, not executing
-        this.id = Number(nodeId);
-        this.nodeCount = Number(totalCount);
+class Dsite {
+    constructor(siteId, totalCount) {
+        this.state = siteState.none //not requesting, not executing
+        this.id = Number(siteId);
+        this.siteCount = Number(totalCount);
         this.ts = 0;
         this.rd_array = []
         this.request = { ts: 0, count: 0 }
@@ -23,18 +23,18 @@ class Dnode {
         this.ts = refTs > this.ts ? refTs + 1 : this.ts + 1
     }
 
-    startNode() {
+    startSite() {
         let port = basePort + this.id
         this.app.get('/:msg/:senderId/:senderTs', (req, res) => {
-            let thisNode = this;
+            let thisSite = this;
             let { msg, senderId, senderTs } = req.params
             this.showLog(`received ${msg}/${senderId}/${senderTs}`)
             if (msg == messageType.request) {
-                thisNode.handleRequest(senderId, senderTs)
-            } else {
-                thisNode.handleReply(senderId, senderTs)
+                thisSite.handleRequest(senderId, senderTs)
+            } else if (msg == messageType.reply) {
+                thisSite.handleReply(senderId, senderTs)
             }
-            res.send(`Node ${this.id} received ${msg} with ts ${senderTs} from ${senderId}`)
+            res.send(`Site ${this.id} received ${msg} with ts ${senderTs} from ${senderId}`)
         })
         this.server = this.app.listen(port, () => {
             this.showLog(`listening at http://localhost:${port}`)
@@ -42,23 +42,23 @@ class Dnode {
     }
 
     showLog(msg) {
-        console.log('Node', this.id, ', TS', this.ts, ':', msg)
+        console.log('Site', this.id, ', TS', this.ts, ':', msg)
     }
-    stopNode() {
+    stopSite() {
         this.server.close(() => {
             this.showLog('stopping.')
         })
     }
 
-    sender(msg, toNodeId) {
-        let port = basePort + Number(toNodeId);
+    sender(msg, toSiteId) {
+        let port = basePort + Number(toSiteId);
         let params = `${msg}/${this.id}/${this.ts}`
         this.showLog(`sending ${params} to ${port}`)
         got(`http://localhost:${port}/${params}`)
             .then((data, err) => {
                 if (err) {
                     this.showLog(err)
-                } 
+                }
             })
     }
 
@@ -74,9 +74,9 @@ class Dnode {
         }
 
         this.advanceClock()
-        this.state = nodeState.requesting //requesting state
+        this.state = siteState.requesting //requesting state
         this.request = { ts: this.ts, count: 0 }
-        for (let index = 1; index <= this.nodeCount; index++) {
+        for (let index = 1; index <= this.siteCount; index++) {
             if (index == this.id) continue
             this.sender(messageType.request, index)
             this.request.count++;
@@ -96,7 +96,7 @@ class Dnode {
          * Otherwise, the reply is deferred and Sj sets RDj [i] = 1
          */
         this.advanceClock(senderTs)
-        
+
         let reply = false
         if (this.state == 0) {
             reply = true
@@ -128,15 +128,16 @@ class Dnode {
     handleReply(senderId, senderTs) {
         //   - Site Si enters the CS after it has received a REPLY message from every site it sent a REQUEST message to
         this.advanceClock(senderTs)
-        
-        this.request.count--
-        this.showLog(`expecting ${this.request.count} replies`)
-        if (this.request.count == 0) { this.executeCs() }
+        if (this.request.count > 0) {
+            this.request.count--
+            this.showLog(`expecting ${this.request.count} replies`)
+            if (this.request.count == 0) { this.executeCs() }
+        }
     }
 
     executeCs() {
         this.showLog(`executing CS`)
-        this.state = nodeState.executing;
+        this.state = siteState.executing;
 
         this.advanceClock()
         this.advanceClock()
@@ -157,7 +158,7 @@ class Dnode {
         //send all replies
 
         this.showLog('releasing CS')
-        this.state = nodeState.none
+        this.state = siteState.none
         this.advanceClock()
         this.rd_array.forEach((v, i) => {
             if (v == 1) {
@@ -168,4 +169,4 @@ class Dnode {
     }
 }
 
-module.exports = Dnode
+module.exports = Dsite

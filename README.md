@@ -2,6 +2,46 @@
 Ricart-Agrawala algorithm for implementing distributed mutual exclusion
 This code is an implementation in Javascript using NodeJs
 
+## assumptions
+- site Ids are numeric and start at 1
+- execution of CS advances clock by 5
+- communication is through HTTP, with each site listening at port 3000+siteId
+- FIFO ordering of message delivery not ensured since communication is via HTTP
+
+
+## How to run
+Expects NodeJs version 16 & windows 10
+
+> npm install
+> node .\index.js number-of-sites scenario-array
+
+eg.:- 
+>node .\index.js 3 [1,1,2,1,3,5]
+
+In the console version, each site can request only once.
+The code has been tested in Windows only
+
+### inputs
+1. number of sites
+3. request sequence array [siteID1, delay1, siteID2, delay2]
+  - e.g.:- 5 [1,0,2,5,3,5,5,7,4,10 ]
+  - system has 5 sites 
+  - once system is running, 
+      - site 1 requests with ts 0
+      - site 2 requests with ts 5
+      - site 3 requests with ts 5, so 2 & 3 requests concurrently
+      - site 5 requests with ts 7
+      - site 4 requests with ts 10
+
+### outputs
+- initializes sites & starts listening
+- each step (request, reply, defer, execute) is written to console. with site id and current timestamp
+- after all steps are completed, waits 5 seconds and close server
+
+## TO DO
+- add tracing
+- allow sites to request more than once
+
 ## algorithm steps
 - requesting
   - When a site Si wants to enter the CS, it broadcasts a timestamped REQUEST message to all other sites
@@ -17,50 +57,10 @@ This code is an implementation in Javascript using NodeJs
 - releasing
   - When site Si exits the CS, it sends all the deferred REPLY messages: ∀j if RDi [j] = 1, then Si  sends a REPLY message to Sj and sets RDi [j] = 0
 
-## assumptions
-- node Ids are numeric and start at 1
-- execution of CS advances clock by 5
-- communication is through HTTP, with each node listening at port 3000+nodeId
-- FIFO ordering of message delivery not ensured
-
-
-## How to run
-Expects nodejs version 16
-
-> npm install
-> node .\index.js number-of-nodes scenario-array
-
-eg.:- 
->node .\index.js 3 [1,1,2,1,3,5]
-
-In the console version, each site can request only once.
-The code has been tested in Windows only
-
-### inputs
-1. number of nodes
-3. request sequence array [nodeID1, delay1, nodeID2, delay2]
-  - e.g.:- 5 [1,0,2,5,3,5,5,7,4,10 ]
-  - system has 5 nodes 
-  - once system is running, 
-      - node 1 requests with ts 0
-      - node 2 requests with ts 5
-      - node 3 requests with ts 5, so 2 & 3 requests concurrently
-      - node 5 requests with ts 7
-      - node 4 requests with ts 10
-
-### outputs
-- initializes nodes & starts listening
-- each step (request, reply, defer, execute) is written to console. with node id and current timestamp
-- after all steps are completed, waits 5 seconds and close server
-
-## TO DO
-- add tracing
-- allow sites to request more than once
-
 ## Test cases
 ### Unit tests
 - Channels
-  - ✔ intializes the node
+  - ✔ intializes the site
   - ✔ send test message to dummy server
   - ✔ receives test and returns acknowledgement
   - ✔ receives request, calls handleRequest and returns acknowledgement
@@ -72,7 +72,7 @@ The code has been tested in Windows only
   -  ✔ advances the clock value to 5 when existing is 4 and msg ts is 3
 
 - Request
-  -  ✔ send request to all other nodes
+  -  ✔ send request to all other sites
   -  ✔ does nothing if already in requesting state
   -  ✔ does nothing if already in executing state
 
@@ -102,58 +102,58 @@ The code has been tested in Windows only
 
 ## Sample run
 
-> node .\index.js 3 [1,1,2,1,3,5]
+> site .\index.js 3 [1,1,2,1,3,5]
 
-initializing 3 nodes
+initializing 3 sites
 starting scenario...  [ '1', '1', '2', '1', '3', '5' ]
-REQUEST from Node 1 at timestamp 1
-Node 1 , TS 3 : sending REQUEST/1/3 to 3002
-Node 1 , TS 3 : sending REQUEST/1/3 to 3003
-Node 1 , TS 3 : sent 2 requests
-REQUEST from Node 2 at timestamp 1
-Node 2 , TS 3 : sending REQUEST/2/3 to 3001
-Node 2 , TS 3 : sending REQUEST/2/3 to 3003
-Node 2 , TS 3 : sent 2 requests
-REQUEST from Node 3 at timestamp 5
-Node 3 , TS 7 : sending REQUEST/3/7 to 3001
-Node 3 , TS 7 : sending REQUEST/3/7 to 3002
-Node 3 , TS 7 : sent 2 requests
-Node 2 , TS 3 : received REQUEST/1/3     
-Node 2 , TS 5 : sending REPLY/2/5 to 3001
-Node 2 , TS 5 : replied
-Node 3 , TS 7 : received REQUEST/1/3       
-Node 3 , TS 9 : sending REPLY/3/9 to 3001  
-Node 3 , TS 9 : replied
-Node 3 , TS 9 : received REQUEST/2/3       
-Node 3 , TS 11 : sending REPLY/3/11 to 3002
-Node 3 , TS 11 : replied
-Node 1 , TS 3 : received REQUEST/2/3       
-Node 1 , TS 4 : deffered. rd_array: 0,1,0  
-Node 1 , TS 4 : received REQUEST/3/7       
-Node 1 , TS 8 : deffered. rd_array: 0,1,1  
-Node 2 , TS 5 : received REQUEST/3/7       
-Node 2 , TS 8 : deffered. rd_array: 0,0,1  
-Node 1 , TS 8 : received REPLY/2/5
-Node 1 , TS 9 : expecting 1 replies        
-Node 1 , TS 9 : received REPLY/3/9
-Node 1 , TS 10 : expecting 0 replies       
-Node 1 , TS 10 : executing CS
-Node 1 , TS 15 : execution done
-Node 1 , TS 15 : releasing CS
-Node 1 , TS 17 : sending REPLY/1/17 to 3002
-Node 1 , TS 18 : sending REPLY/1/18 to 3003
-Node 2 , TS 8 : received REPLY/3/11        
-Node 2 , TS 12 : expecting 1 replies
-Node 2 , TS 12 : received REPLY/1/17
-Node 2 , TS 18 : expecting 0 replies
-Node 2 , TS 18 : executing CS
-Node 2 , TS 23 : execution done
-Node 2 , TS 23 : releasing CS
-Node 2 , TS 25 : sending REPLY/2/25 to 3003
-Node 3 , TS 11 : received REPLY/1/18
-Node 3 , TS 19 : expecting 1 replies
-Node 3 , TS 19 : received REPLY/2/25
-Node 3 , TS 26 : expecting 0 replies
-Node 3 , TS 26 : executing CS
-Node 3 , TS 31 : execution done
-Node 3 , TS 31 : releasing CS
+REQUEST from Site 1 at timestamp 1
+Site 1 , TS 3 : sending REQUEST/1/3 to 3002
+Site 1 , TS 3 : sending REQUEST/1/3 to 3003
+Site 1 , TS 3 : sent 2 requests
+REQUEST from Site 2 at timestamp 1
+Site 2 , TS 3 : sending REQUEST/2/3 to 3001
+Site 2 , TS 3 : sending REQUEST/2/3 to 3003
+Site 2 , TS 3 : sent 2 requests
+REQUEST from Site 3 at timestamp 5
+Site 3 , TS 7 : sending REQUEST/3/7 to 3001
+Site 3 , TS 7 : sending REQUEST/3/7 to 3002
+Site 3 , TS 7 : sent 2 requests
+Site 2 , TS 3 : received REQUEST/1/3     
+Site 2 , TS 5 : sending REPLY/2/5 to 3001
+Site 2 , TS 5 : replied
+Site 3 , TS 7 : received REQUEST/1/3       
+Site 3 , TS 9 : sending REPLY/3/9 to 3001  
+Site 3 , TS 9 : replied
+Site 3 , TS 9 : received REQUEST/2/3       
+Site 3 , TS 11 : sending REPLY/3/11 to 3002
+Site 3 , TS 11 : replied
+Site 1 , TS 3 : received REQUEST/2/3       
+Site 1 , TS 4 : deffered. rd_array: 0,1,0  
+Site 1 , TS 4 : received REQUEST/3/7       
+Site 1 , TS 8 : deffered. rd_array: 0,1,1  
+Site 2 , TS 5 : received REQUEST/3/7       
+Site 2 , TS 8 : deffered. rd_array: 0,0,1  
+Site 1 , TS 8 : received REPLY/2/5
+Site 1 , TS 9 : expecting 1 replies        
+Site 1 , TS 9 : received REPLY/3/9
+Site 1 , TS 10 : expecting 0 replies       
+Site 1 , TS 10 : executing CS
+Site 1 , TS 15 : execution done
+Site 1 , TS 15 : releasing CS
+Site 1 , TS 17 : sending REPLY/1/17 to 3002
+Site 1 , TS 18 : sending REPLY/1/18 to 3003
+Site 2 , TS 8 : received REPLY/3/11        
+Site 2 , TS 12 : expecting 1 replies
+Site 2 , TS 12 : received REPLY/1/17
+Site 2 , TS 18 : expecting 0 replies
+Site 2 , TS 18 : executing CS
+Site 2 , TS 23 : execution done
+Site 2 , TS 23 : releasing CS
+Site 2 , TS 25 : sending REPLY/2/25 to 3003
+Site 3 , TS 11 : received REPLY/1/18
+Site 3 , TS 19 : expecting 1 replies
+Site 3 , TS 19 : received REPLY/2/25
+Site 3 , TS 26 : expecting 0 replies
+Site 3 , TS 26 : executing CS
+Site 3 , TS 31 : execution done
+Site 3 , TS 31 : releasing CS

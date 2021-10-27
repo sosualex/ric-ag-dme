@@ -1,5 +1,5 @@
 module.exports={
-    nodeState:{
+    siteState:{
         none:0, requesting:1, executing:2
     },
     messageType:{
