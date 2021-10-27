@@ -1,4 +1,3 @@
-//const { log, out, traceIn, traceOut, show } = require('../log');
 const express = require('express')
 const basePort = 3000
 const got = require('got');
@@ -38,7 +37,7 @@ class Dnode {
             res.send(`Node ${this.id} received ${msg} with ts ${senderTs} from ${senderId}`)
         })
         this.server = this.app.listen(port, () => {
-            //this.showLog(`listening at http://localhost:${port}`)
+            this.showLog(`listening at http://localhost:${port}`)
         })
     }
 
@@ -47,7 +46,7 @@ class Dnode {
     }
     stopNode() {
         this.server.close(() => {
-            //this.showLog('stopping.')
+            this.showLog('stopping.')
         })
     }
 
@@ -96,10 +95,8 @@ class Dnode {
          * 
          * Otherwise, the reply is deferred and Sj sets RDj [i] = 1
          */
-        //this.showLog(`received request from ${senderId} with ts ${senderTs}`)
         this.advanceClock(senderTs)
-        //this.showLog(`handling request from ${senderId} with ts ${senderTs}`)
-
+        
         let reply = false
         if (this.state == 0) {
             reply = true
@@ -162,14 +159,12 @@ class Dnode {
         this.showLog('releasing CS')
         this.state = nodeState.none
         this.advanceClock()
-        //out(`Deffered replies: ${this.rd_array}`)
         this.rd_array.forEach((v, i) => {
             if (v == 1) {
                 this.sendReply(i + 1)
             }
         })
 
-        //out(`Deffered replies: ${this.rd_array}`)
     }
 }
 
