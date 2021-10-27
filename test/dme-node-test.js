@@ -1,9 +1,7 @@
 
 const assert = require('assert');
 const Dnode = require('../app/dme-node');
-const log = require('../log');
 const { nodeState, messageType } = require('../app/constants');
-const { setUncaughtExceptionCaptureCallback } = require('process');
 
 describe('>>>Node initialization', () => {
     it('intializes the node', () => {
@@ -16,11 +14,9 @@ describe('>>>Node initialization', () => {
             assert.equal(dnode.rd_array[index], 0,
                 `rd_array should be empty at index ${index}`)
         }
-        //log(dnode)
     })
 });
 describe('>>>Clock advancement', () => {
-
     it('advances the clock value to 1 when existing is 0', () => {
         let dnode = new Dnode();
         dnode.ts = 0;
@@ -45,7 +41,6 @@ describe('>>>Request', () => {
         let dnode = new Dnode(1, 5);
         let tracker = new assert.CallTracker();
         dnode.sender = tracker.calls((msg, toId) => {
-            log('calling sender')
             assert.equal(msg, messageType.request, 'message should be request')
             assert.notEqual(toId, dnode.id, 'should not send to self')
             assert(toId <= 5, 'should send only to nodes in system')
@@ -106,7 +101,6 @@ describe('>>>Handle request', () => {
 
         assert.doesNotThrow(() => { tracker.verify() }, JSON.stringify(tracker.report()))
         assert.deepStrictEqual(dnode.rd_array[reqFromId - 1], 0, 'rd_array should be 0')
-
     })
 
     it('reply if requesting and incoming ts < own request ts = current ts', () => {
@@ -266,7 +260,6 @@ describe('>>>Reply', () => {
         let sendToId = dnode.id + 1
 
         dnode.sender = tracker.calls((msg, toId) => {
-            log('calling sender')
             assert.equal(msg, messageType.reply, 'message should be reply')
             assert.equal(toId, sendToId, 'should send to correct node')
         })
@@ -308,7 +301,8 @@ describe('>>>Handle reply', () => {
             assert.equal(ts, senderTs, 'timestamp should be passed properly')
         })
         let exec_Tracker = new assert.CallTracker()
-        dnode.executeCs = exec_Tracker.calls(() => { log('executing critical section....') })
+        dnode.executeCs = exec_Tracker.calls(() => { 
+        })
 
         dnode.handleReply(senderId, senderTs)
 
@@ -321,7 +315,8 @@ describe('>>>Execute', () => {
     it('executes and initiates release of CS', () => {
         let dnode = new Dnode(1, 2)
         let release_tracker = new assert.CallTracker()
-        dnode.releaseCs = release_tracker.calls(() => { log('releasing cs') })
+        dnode.releaseCs = release_tracker.calls(() => { 
+        })
         let clock_tracker = new assert.CallTracker()
         dnode.advanceClock = clock_tracker.calls((ts) => {
             assert.equal(ts, undefined, 'timestamp should be picked from node')
