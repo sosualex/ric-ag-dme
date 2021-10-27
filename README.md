@@ -22,13 +22,16 @@ Ricart-Agrawala algorithm for implementing distributed mutual exclusion
 - communication is through HTTP, with each node listening at port 3000+nodeId
 - FIFO ordering of message delivery not ensured
 
+
 # how to run
-> node index.js <number of nodes> <scenario array>
+> node .\index.js <number of nodes> <scenario array>
+eg.:- node .\index.js 3 [1,1,2,1,3,5]
+In the console version, each site can request only once.
 
 ## inputs
 1. number of nodes
 3. request sequence array [nodeID1, delay1, nodeID2, delay2]
-  - e.g.:- 5, [1,0,2,5,3,5,5,7,4,10 ]
+  - e.g.:- 5 [1,0,2,5,3,5,5,7,4,10 ]
   - system has 5 nodes 
   - once system is running, 
       - node 1 requests with ts 0

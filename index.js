@@ -1,9 +1,11 @@
 // entry point
 const Dnode = require('./app/dme-node')
-const { log, out } = require('./log')
 
-let nodeCount = 3
-let seq = [2,0,1,0,3,5]
+var myArgs = process.argv.slice(2);
+console.log('myArgs: ', myArgs);
+
+let nodeCount = Number(myArgs[0])
+let seq = myArgs[1].split('[')[1].split(']')[0].split(',')
 
 let nodes = []
 for (let index = 0; index < nodeCount; index++) {
@@ -17,8 +19,9 @@ console.log('starting scenario... ', seq)
 
 setTimeout(() => {
     while (seq.length > 1) {
-        let nodeId = seq.shift()
-        let ts = seq.shift()
+        let nodeId = Number(seq.shift())
+        let ts = Number(seq.shift())
+        console.log('REQUEST from Node', nodeId,'at timestamp', ts)
         let thisNode = nodes[nodeId - 1]
         thisNode.advanceClock(ts)
         thisNode.sendRequest()
