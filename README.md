@@ -11,6 +11,7 @@ This code is an implementation in Javascript using NodeJs
 
 ## How to run
 Expects NodeJs version 16 & windows 10
+Code is also available at https://github.com/sosualex/ric-ag-dme
 
 > npm install
 
@@ -24,7 +25,7 @@ The code has been tested in Windows only
 
 ### inputs
 1. number of sites
-3. request sequence array [siteID1, delay1, siteID2, delay2]
+2. request sequence array [siteID1, delay1, siteID2, delay2]
   - e.g.:- 5 [1,0,2,5,3,5,5,7,4,10 ]
   - system has 5 sites 
   - once system is running, 
@@ -34,10 +35,12 @@ The code has been tested in Windows only
       - site 5 requests with ts 7
       - site 4 requests with ts 10
 
+Default scenario if input is not provided is 3 [1,0] i.e., total 3 sites and only 1 is requesting
+
 ### outputs
 - initializes sites & starts listening
 - each step (request, reply, defer, execute) is written to console. with site id and current timestamp
-- after all steps are completed, waits 5 seconds and close server
+- after all steps are completed, waits few seconds and close server
 
 ## TO DO
 - add tracing

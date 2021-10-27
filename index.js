@@ -2,8 +2,10 @@
 const Dsite = require('./app/dme-site')
 
 var myArgs = process.argv.slice(2);
-let siteCount = Number(myArgs[0])
-let seq = myArgs[1].split('[')[1].split(']')[0].split(',')
+let siteCount = myArgs[0] ? Number(myArgs[0]) : 3
+let seq = myArgs[1]
+    ? myArgs[1].split('[')[1].split(']')[0].split(',')
+    : [1,0]
 
 let sites = []
 console.log('initializing', siteCount, 'sites')
@@ -18,7 +20,7 @@ setTimeout(() => {
     while (seq.length > 1) {
         let siteId = Number(seq.shift())
         let ts = Number(seq.shift())
-        console.log('REQUEST from Site', siteId,'at timestamp', ts)
+        console.log('REQUEST from Site', siteId, 'at timestamp', ts)
         let thisSite = sites[siteId - 1]
         thisSite.advanceClock(ts)
         thisSite.sendRequest()
@@ -32,4 +34,4 @@ setTimeout(() => {
             n.stopSite()
         });
     }, 0)
-}, siteCount*1000)
+}, siteCount * 1000)
