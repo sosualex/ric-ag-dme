@@ -13,6 +13,7 @@ This code is an implementation in Javascript using NodeJs
 Expects NodeJs version 16 & windows 10
 
 > npm install
+
 > node .\index.js number-of-sites scenario-array
 
 eg.:- 
